@@ -72,8 +72,42 @@ rclcpp_components_register_node(octomap_server2
   PLUGIN "octomap_server::OctomapServer"
   EXECUTABLE octomap_server)
 
+  add_library(octomap_saver SHARED
+  src/octomap_saver.cpp
+)
+
+ament_target_dependencies(octomap_saver
+  rclcpp
+  PCL
+  pcl_conversions
+  sensor_msgs
+  std_msgs
+  nav_msgs
+  visualization_msgs
+  geometry_msgs
+  std_srvs
+  octomap
+  octomap_msgs
+  message_filters
+  tf2_ros
+  tf2_msgs
+  tf2
+  tf2_geometry_msgs
+  rclcpp_components
+  )
+
+target_link_libraries(octomap_saver
+   ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES}
+)
+
+rclcpp_components_register_node(octomap_saver
+  PLUGIN "octomap_server::OctomapSaver"
+  EXECUTABLE octomap_saver_node
+)
+
 install(TARGETS
   octomap_server2
+  octomap_saver
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)

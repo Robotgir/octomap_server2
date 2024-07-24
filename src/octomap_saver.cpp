@@ -218,6 +218,93 @@
 
 //Octomap saver which will save it as .bt file and pcd file 
 
+// #include <rclcpp/rclcpp.hpp>
+// #include <octomap/octomap.h>
+// #include <octomap_msgs/conversions.h>
+// #include <octomap/OcTree.h>
+// #include <pcl/io/pcd_io.h>
+// #include <pcl/point_cloud.h>
+// #include <pcl/point_types.h>
+// #include "octomap_msgs/srv/get_octomap.hpp"
+
+// namespace octomap_server {
+// using namespace octomap;
+// using namespace pcl;
+// using octomap_msgs::srv::GetOctomap;
+
+// class OctomapSaver : public rclcpp::Node {
+// public:
+//     explicit OctomapSaver(const rclcpp::NodeOptions & node_options);
+
+// private:
+//     void saveAsPCD(const std::shared_ptr<OcTree> &octree, const std::string &pcd_path);
+//     void saveOctomap(const std::shared_ptr<GetOctomap::Response> &response);
+//     std::string octomap_path_;
+//     std::string pcd_path_;
+//     bool save_bt_;
+// };
+
+// OctomapSaver::OctomapSaver(const rclcpp::NodeOptions & node_options)
+// : Node("octomap_saver", node_options) {
+//     octomap_path_ = this->declare_parameter("octomap_path", "");
+//     pcd_path_ = this->declare_parameter("pcd_path", "");
+//     save_bt_ = this->declare_parameter("save_bt", false);
+
+//     if (octomap_path_.empty() || pcd_path_.empty()) {
+//         RCLCPP_ERROR(this->get_logger(), "Invalid file paths provided.");
+//         rclcpp::shutdown();
+//         return;
+//     }
+
+//     auto client = this->create_client<GetOctomap>("octomap_full");
+//     auto request = std::make_shared<GetOctomap::Request>();
+
+//     // Using lambda to handle response
+//     auto result_callback = [this](rclcpp::Client<GetOctomap>::SharedFuture future) {
+//         auto response = future.get();
+//         saveOctomap(response);
+//     };
+
+//     // Sending request
+//     client->async_send_request(request, result_callback);
+// }
+
+// void OctomapSaver::saveOctomap(const std::shared_ptr<GetOctomap::Response> &response) {
+//     auto tree = std::dynamic_pointer_cast<OcTree>(octomap_msgs::msgToMap(response->map));
+//     if (!tree) {
+//         RCLCPP_ERROR(this->get_logger(), "Failed to convert map message to OcTree.");
+//         return;
+//     }
+
+//     if (save_bt_ && !tree->writeBinary(octomap_path_)) {
+//         RCLCPP_ERROR(this->get_logger(), "Failed to save OctoMap .bt file '%s'", octomap_path_.c_str());
+//     }
+
+//     saveAsPCD(tree, pcd_path_);
+// }
+
+// void OctomapSaver::saveAsPCD(const std::shared_ptr<OcTree> &octree, const std::string &pcd_path) {
+//     PointCloud<PointXYZ>::Ptr cloud(new PointCloud<PointXYZ>());
+
+//     for (auto it = octree->begin_leafs(), end = octree->end_leafs(); it != end; ++it) {
+//         if (octree->isNodeOccupied(*it)) {
+//             cloud->push_back(PointXYZ(it.getX(), it.getY(), it.getZ()));
+//         }
+//     }
+
+//     if (io::savePCDFileASCII(pcd_path, *cloud) == 0) {
+//         RCLCPP_INFO(this->get_logger(), "Saved %lu points to '%s'", cloud->size(), pcd_path.c_str());
+//     } else {
+//         RCLCPP_ERROR(this->get_logger(), "Failed to save PCD file '%s'", pcd_path.c_str());
+//     }
+// }
+
+// } // namespace octomap_server
+
+// #include "rclcpp_components/register_node_macro.hpp"
+// RCLCPP_COMPONENTS_REGISTER_NODE(octomap_server::OctomapSaver)
+
+//octomap saver new version
 #include <rclcpp/rclcpp.hpp>
 #include <octomap/octomap.h>
 #include <octomap_msgs/conversions.h>
@@ -237,54 +324,48 @@ public:
     explicit OctomapSaver(const rclcpp::NodeOptions & node_options);
 
 private:
-    void saveAsPCD(const std::shared_ptr<OcTree> &octree, const std::string &pcd_path);
-    void saveOctomap(const std::shared_ptr<GetOctomap::Response> &response);
-    std::string octomap_path_;
-    std::string pcd_path_;
-    bool save_bt_;
+    void saveAsPCD(const std::shared_ptr<OcTree> &octree, const std::string &filename);
 };
 
 OctomapSaver::OctomapSaver(const rclcpp::NodeOptions & node_options)
 : Node("octomap_saver", node_options) {
-    octomap_path_ = this->declare_parameter("octomap_path", "");
-    pcd_path_ = this->declare_parameter("pcd_path", "");
-    save_bt_ = this->declare_parameter("save_bt", false);
+    const bool full = this->declare_parameter("full", false);
+    const std::string octomap_path = this->declare_parameter("octomap_path", "");
+    const std::string pcd_path = this->declare_parameter("pcd_path", "");
 
-    if (octomap_path_.empty() || pcd_path_.empty()) {
-        RCLCPP_ERROR(this->get_logger(), "Invalid file paths provided.");
+    if (octomap_path.empty() || octomap_path.size() < 4) {
+        RCLCPP_ERROR(this->get_logger(), "Invalid OctoMap file name or extension: %s", octomap_path.c_str());
         rclcpp::shutdown();
         return;
     }
 
-    auto client = this->create_client<GetOctomap>("octomap_full");
-    auto request = std::make_shared<GetOctomap::Request>();
-
-    // Using lambda to handle response
-    auto result_callback = [this](rclcpp::Client<GetOctomap>::SharedFuture future) {
-        auto response = future.get();
-        saveOctomap(response);
-    };
-
-    // Sending request
-    client->async_send_request(request, result_callback);
-}
-
-void OctomapSaver::saveOctomap(const std::shared_ptr<GetOctomap::Response> &response) {
-    auto tree = std::dynamic_pointer_cast<OcTree>(octomap_msgs::msgToMap(response->map));
-    if (!tree) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to convert map message to OcTree.");
+    if (pcd_path.empty()) {
+        RCLCPP_ERROR(this->get_logger(), "Invalid PCD file path specified.");
+        rclcpp::shutdown();
         return;
     }
 
-    if (save_bt_ && !tree->writeBinary(octomap_path_)) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to save OctoMap .bt file '%s'", octomap_path_.c_str());
-    }
+    auto client = this->create_client<GetOctomap>(full ? "octomap_full" : "octomap_binary");
+    auto request = std::make_shared<GetOctomap::Request>();
 
-    saveAsPCD(tree, pcd_path_);
+    // Using lambda to handle response
+    auto result_callback = [this, pcd_path](rclcpp::Client<GetOctomap>::SharedFuture result) {
+        // Convert the raw pointer returned by msgToMap to a shared_ptr
+        auto abstract_tree = std::shared_ptr<octomap::AbstractOcTree>(octomap_msgs::msgToMap(result.get()->map));
+        auto tree = std::dynamic_pointer_cast<OcTree>(abstract_tree);
+        if (tree) {
+            saveAsPCD(tree, pcd_path);
+        } else {
+            RCLCPP_ERROR(this->get_logger(), "Failed to convert map message to OcTree.");
+        }
+    };
+
+    // Sending request
+    auto result = client->async_send_request(request, result_callback);
 }
 
-void OctomapSaver::saveAsPCD(const std::shared_ptr<OcTree> &octree, const std::string &pcd_path) {
-    PointCloud<PointXYZ>::Ptr cloud(new PointCloud<PointXYZ>());
+void OctomapSaver::saveAsPCD(const std::shared_ptr<OcTree> &octree, const std::string &filename) {
+    PointCloud<PointXYZ>::Ptr cloud(new PointCloud<PointXYZ>);
 
     for (auto it = octree->begin_leafs(), end = octree->end_leafs(); it != end; ++it) {
         if (octree->isNodeOccupied(*it)) {
@@ -292,10 +373,10 @@ void OctomapSaver::saveAsPCD(const std::shared_ptr<OcTree> &octree, const std::s
         }
     }
 
-    if (io::savePCDFileASCII(pcd_path, *cloud) == 0) {
-        RCLCPP_INFO(this->get_logger(), "Saved %lu points to '%s'", cloud->size(), pcd_path.c_str());
+    if (io::savePCDFileASCII(filename, *cloud) == 0) {
+        RCLCPP_INFO(this->get_logger(), "Saved %lu points to '%s'", cloud->size(), filename.c_str());
     } else {
-        RCLCPP_ERROR(this->get_logger(), "Failed to save PCD file '%s'", pcd_path.c_str());
+        RCLCPP_ERROR(this->get_logger(), "Failed to save PCD file '%s'", filename.c_str());
     }
 }
 
