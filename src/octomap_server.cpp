@@ -8,7 +8,7 @@ namespace octomap_server {
         Node(node_name, options),
         m_octree(NULL),
         m_maxRange(20),
-        m_worldFrameId("/map"),
+        m_worldFrameId("/world_ned"),
         m_baseFrameId("base_footprint"),
         m_useHeightMap(true),
         m_useColoredMap(false),

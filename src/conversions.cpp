@@ -38,7 +38,7 @@
  */
 
 #include <octomap_server2/conversions.h>
-
+#include <sstream>
 namespace octomap {
 
     /**
@@ -121,5 +121,4 @@ namespace octomap {
         */
     }
 }
-
 

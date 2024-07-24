@@ -8,9 +8,9 @@ from launch.actions import DeclareLaunchArgument
 
 def generate_launch_description():
     return LaunchDescription([
-        DeclareLaunchArgument('input_cloud_topic', default_value='/livox/lidar'),
+        DeclareLaunchArgument('input_cloud_topic', default_value='/airsim_node/PX4/lidar/Lidar1'),
         DeclareLaunchArgument('resolution', default_value='0.15'),
-        DeclareLaunchArgument('frame_id', default_value='map'),
+        DeclareLaunchArgument('frame_id', default_value='world_ned'),
         DeclareLaunchArgument('base_frame_id', default_value='base_footprint'),
         DeclareLaunchArgument('height_map', default_value='True'),
         DeclareLaunchArgument('colored_map', default_value='True'),
