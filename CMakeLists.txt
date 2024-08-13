@@ -34,17 +34,20 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-find_package(rclcpp_components REQUIRED)
 
-link_directories(${PCL_LIBRARY_DIRS})
+# Ensure that the octomap and octomath libraries are found
+find_library(OCTOMAP_LIBRARIES NAMES octomath REQUIRED)
+find_library(OCTOMAP_LIBRARIES NAMES octomap REQUIRED)
+
 include_directories(${PCL_INCLUDE_DIRS})
 include_directories(include)
 
+# Define the octomap_server2 library
 add_library(octomap_server2 SHARED
   src/octomap_server.cpp
   src/transforms.cpp
   src/conversions.cpp
-  )
+)
 
 ament_target_dependencies(octomap_server2
   rclcpp
@@ -64,15 +67,20 @@ ament_target_dependencies(octomap_server2
   tf2
   tf2_geometry_msgs
   rclcpp_components
-  )
+)
 
-target_link_libraries(octomap_server2 ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES})
+target_link_libraries(octomap_server2
+  ${PCL_LIBRARIES}
+  ${OCTOMAP_LIBRARIES}
+)
 
 rclcpp_components_register_node(octomap_server2
   PLUGIN "octomap_server::OctomapServer"
-  EXECUTABLE octomap_server)
+  EXECUTABLE octomap_server
+)
 
-  add_library(octomap_saver SHARED
+# Define the octomap_saver library
+add_library(octomap_saver SHARED
   src/octomap_saver.cpp
 )
 
@@ -94,10 +102,11 @@ ament_target_dependencies(octomap_saver
   tf2
   tf2_geometry_msgs
   rclcpp_components
-  )
+)
 
 target_link_libraries(octomap_saver
-   ${PCL_LIBRARIES} ${OCTOMAP_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${OCTOMAP_LIBRARIES}
 )
 
 rclcpp_components_register_node(octomap_saver
@@ -110,11 +119,12 @@ install(TARGETS
   octomap_saver
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin)
+  RUNTIME DESTINATION bin
+)
 
 install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}/
-  )
+)
 
 ament_package()
