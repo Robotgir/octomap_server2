@@ -712,9 +712,9 @@ namespace octomap_server {
                 occupiedNodesVis.markers[i].id = i;
                 occupiedNodesVis.markers[i].type =
                     visualization_msgs::msg::Marker::CUBE_LIST;
-                occupiedNodesVis.markers[i].scale.x = size;
-                occupiedNodesVis.markers[i].scale.y = size;
-                occupiedNodesVis.markers[i].scale.z = size;
+                occupiedNodesVis.markers[i].scale.x = 0.5;
+                occupiedNodesVis.markers[i].scale.y = 0.5;
+                occupiedNodesVis.markers[i].scale.z = 0.5;
                 if (!m_useColoredMap)
                     occupiedNodesVis.markers[i].color = m_color;
 
